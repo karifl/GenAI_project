@@ -1,3 +1,177 @@
+/* Multi-Page Application Styling */
+.page {
+    display: none;
+    background: white;
+    margin: 2rem auto;
+    padding: 0;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e1e8ed;
+    overflow: hidden;
+    max-width: 1200px;
+    min-height: 80vh;
+}
+
+.page.active {
+    display: block !important;
+}
+
+.page:first-child {
+    margin-top: 1rem;
+}
+
+.page:last-child {
+    margin-bottom: 3rem;
+}
+
+/* Page Header Styling */
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    margin: 0;
+    border-bottom: none;
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: 2.5rem;
+    font-weight: 300;
+    text-align: center;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.page-header p {
+    margin: 1rem 0 0 0;
+    text-align: center;
+    opacity: 0.9;
+    font-size: 1.1rem;
+}
+
+/* Page Content Styling */
+.page .container {
+    padding: 3rem;
+    margin: 0;
+    max-width: none;
+}
+
+/* Navigation styling for multi-page appearance */
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: white;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+/* Course Detail Page Special Styling */
+#courseDetail {
+    border-left: 5px solid #e74c3c;
+}
+
+#courseDetail .page-header {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+/* Home Page Special Styling */
+#home .page-header {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+}
+
+/* Courses Page Special Styling */
+#courses .page-header {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+}
+
+/* Add Course Page Special Styling */
+#addCourse .page-header {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+}
+
+/* Add Lesson Page Special Styling */
+#addLesson .page-header {
+    background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+}
+
+/* Smooth scrolling removed for accessibility */
+
+/* Better spacing for the overall layout */
+body {
+    line-height: 1.6;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+/* Page transition effects removed for link-only access */
+
+/* Enhanced course detail styling */
+.course-detail-header {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin: 2rem 0;
+    border-left: 4px solid #e74c3c;
+}
+
+/* Form Page Styling */
+.form-page {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin: 2rem 0;
+    max-width: 800px;
+}
+
+.form-page label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.form-page input,
+.form-page textarea,
+.form-page select {
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border: 2px solid #ecf0f1;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-page input:focus,
+.form-page textarea:focus,
+.form-page select:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    justify-content: flex-end;
+}
+
+/* Navigation styling without scroll-based highlighting */
+.nav-menu a {
+    transition: background-color 0.3s ease;
+}
+
+.nav-menu a:hover {
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    padding: 0.5rem 1rem;
+}
+
 /* Add to existing styles */
 
 /* Loading Indicator */

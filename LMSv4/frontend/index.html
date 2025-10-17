@@ -18,8 +18,11 @@
 
     <!-- Home Page -->
     <div id="home" class="page active">
-        <div class="container">
+        <div class="page-header">
             <h1>Welcome to Your Learning Management System</h1>
+            <p>Manage your courses and lessons efficiently</p>
+        </div>
+        <div class="container">
             <p class="welcome-message">
                 Hello! This platform helps you manage your courses and lessons efficiently. 
                 You can create courses, add multiple lessons, and organize your content.
@@ -53,14 +56,17 @@
 
     <!-- Courses Page -->
     <div id="courses" class="page">
-        <div class="container">
+        <div class="page-header">
             <h1>Course Management</h1>
+            <p>Create, edit, and manage your courses</p>
+        </div>
+        <div class="container">
             
             <!-- Loading Indicator -->
             <div id="loading" class="loading">Loading courses...</div>
             
             <!-- Add Course Button -->
-            <button class="btn btn-primary" onclick="openCourseModal()">+ Add New Course</button>
+            <button class="btn btn-primary" onclick="showPage('addCourse')">+ Add New Course</button>
             
             <!-- Course List -->
             <div id="courseList" class="course-grid">
@@ -71,6 +77,10 @@
 
     <!-- Course Detail Page (with Lessons) -->
     <div id="courseDetail" class="page">
+        <div class="page-header">
+            <h1 id="courseDetailTitle">Course Details</h1>
+            <p>View and manage course lessons</p>
+        </div>
         <div class="container">
             <button class="btn btn-secondary" onclick="showPage('courses')">&larr; Back to Courses</button>
             
@@ -81,7 +91,7 @@
             <div class="lessons-section">
                 <div class="section-header">
                     <h2>Course Lessons</h2>
-                    <button class="btn btn-primary" onclick="openLessonModal()">+ Add Lesson</button>
+                    <button class="btn btn-primary" onclick="showPage('addLesson')">+ Add Lesson</button>
                 </div>
                 
                 <div id="lessonList" class="lesson-list">
@@ -91,12 +101,16 @@
         </div>
     </div>
 
-    <!-- Course Modal (for Create/Update) -->
-    <div id="courseModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeCourseModal()">&times;</span>
-            <h2 id="modalTitle">Add New Course</h2>
-            <form id="courseForm">
+    <!-- Add Course Page -->
+    <div id="addCourse" class="page">
+        <div class="page-header">
+            <h1 id="addCourseTitle">Add New Course</h1>
+            <p>Create a new course for your LMS</p>
+        </div>
+        <div class="container">
+            <button class="btn btn-secondary" onclick="showPage('courses')">&larr; Back to Courses</button>
+            
+            <form id="courseForm" class="form-page">
                 <input type="hidden" id="courseId">
                 
                 <label for="courseName">Course Name:</label>
@@ -118,20 +132,24 @@
                     <option value="completed">Completed</option>
                 </select>
                 
-                <div class="modal-buttons">
+                <div class="form-buttons">
                     <button type="submit" class="btn btn-primary">Save Course</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeCourseModal()">Cancel</button>
+                    <button type="button" class="btn btn-secondary" onclick="showPage('courses')">Cancel</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Lesson Modal (for Create/Update) -->
-    <div id="lessonModal" class="modal">
-        <div class="modal-content modal-large">
-            <span class="close" onclick="closeLessonModal()">&times;</span>
-            <h2 id="lessonModalTitle">Add New Lesson</h2>
-            <form id="lessonForm">
+    <!-- Add Lesson Page -->
+    <div id="addLesson" class="page">
+        <div class="page-header">
+            <h1 id="addLessonTitle">Add New Lesson</h1>
+            <p>Create a new lesson for your course</p>
+        </div>
+        <div class="container">
+            <button class="btn btn-secondary" onclick="goBackToCourseDetail()">&larr; Back to Course</button>
+            
+            <form id="lessonForm" class="form-page">
                 <input type="hidden" id="lessonId">
                 
                 <div class="form-row">
@@ -163,13 +181,14 @@
                     </div>
                 </div>
                 
-                <div class="modal-buttons">
+                <div class="form-buttons">
                     <button type="submit" class="btn btn-primary">Save Lesson</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeLessonModal()">Cancel</button>
+                    <button type="button" class="btn btn-secondary" onclick="goBackToCourseDetail()">Cancel</button>
                 </div>
             </form>
         </div>
     </div>
+
 
     <script src="script.js"></script>
 </body>

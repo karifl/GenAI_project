@@ -9,16 +9,22 @@ let currentLessons = [];
 // ==================== PAGE NAVIGATION ====================
 
 function showPage(pageId) {
+    // Hide all pages first
     document.querySelectorAll('.page').forEach(page => {
         page.classList.remove('active');
     });
     
-    document.getElementById(pageId).classList.add('active');
-    
-    if (pageId === 'courses') {
-        loadCourses();
-    } else if (pageId === 'home') {
-        updateStats();
+    // Show the requested page
+    const targetPage = document.getElementById(pageId);
+    if (targetPage) {
+        targetPage.classList.add('active');
+        
+        // Load data if needed
+        if (pageId === 'courses') {
+            loadCourses();
+        } else if (pageId === 'home') {
+            updateStats();
+        }
     }
 }
 
@@ -98,11 +104,10 @@ async function updateStats() {
     }
 }
 
-// Open Course Modal
-function openCourseModal(courseId = null) {
-    const modal = document.getElementById('courseModal');
-    const modalTitle = document.getElementById('modalTitle');
+// Open Course Page
+function openCoursePage(courseId = null) {
     const form = document.getElementById('courseForm');
+    const pageTitle = document.getElementById('addCourseTitle');
     
     form.reset();
     document.getElementById('courseId').value = '';
@@ -110,7 +115,7 @@ function openCourseModal(courseId = null) {
     if (courseId) {
         const course = courses.find(c => c._id === courseId);
         if (course) {
-            modalTitle.textContent = 'Edit Course';
+            pageTitle.textContent = 'Edit Course';
             document.getElementById('courseId').value = course._id;
             document.getElementById('courseName').value = course.name;
             document.getElementById('courseDescription').value = course.description;
@@ -119,20 +124,15 @@ function openCourseModal(courseId = null) {
             document.getElementById('courseStatus').value = course.status;
         }
     } else {
-        modalTitle.textContent = 'Add New Course';
+        pageTitle.textContent = 'Add New Course';
     }
     
-    modal.classList.add('active');
-}
-
-// Close Course Modal
-function closeCourseModal() {
-    document.getElementById('courseModal').classList.remove('active');
+    showPage('addCourse');
 }
 
 // Edit Course
 function editCourse(courseId) {
-    openCourseModal(courseId);
+    openCoursePage(courseId);
 }
 
 // Delete Course
@@ -198,7 +198,7 @@ document.getElementById('courseForm').addEventListener('submit', async function(
         
         if (result.success) {
             alert(result.message);
-            closeCourseModal();
+            showPage('courses');
             loadCourses();
         } else {
             throw new Error(result.message);
@@ -222,6 +222,7 @@ async function viewCourseDetail(courseId) {
         if (result.success) {
             const course = result.data;
             displayCourseDetail(course);
+            // Show course detail section
             showPage('courseDetail');
         } else {
             throw new Error(result.message);
@@ -235,11 +236,14 @@ async function viewCourseDetail(courseId) {
 // Display Course Detail
 function displayCourseDetail(course) {
     const courseInfo = document.getElementById('courseInfo');
+    const courseDetailTitle = document.getElementById('courseDetailTitle');
+    
+    // Update the page header title
+    courseDetailTitle.textContent = course.name;
     
     const totalDuration = course.lessons.reduce((sum, lesson) => sum + (lesson.duration || 0), 0);
     
     courseInfo.innerHTML = `
-        <h1>${course.name}</h1>
         <p>${course.description}</p>
         <div class="course-meta">
             <div class="course-meta-item">
@@ -323,11 +327,10 @@ function toggleLesson(lessonId) {
     icon.classList.toggle('rotated');
 }
 
-// Open Lesson Modal
-function openLessonModal(lessonId = null) {
-    const modal = document.getElementById('lessonModal');
-    const modalTitle = document.getElementById('lessonModalTitle');
+// Open Lesson Page
+function openLessonPage(lessonId = null) {
     const form = document.getElementById('lessonForm');
+    const pageTitle = document.getElementById('addLessonTitle');
     
     form.reset();
     document.getElementById('lessonId').value = '';
@@ -335,7 +338,7 @@ function openLessonModal(lessonId = null) {
     if (lessonId) {
         const lesson = currentLessons.find(l => l._id === lessonId);
         if (lesson) {
-            modalTitle.textContent = 'Edit Lesson';
+            pageTitle.textContent = 'Edit Lesson';
             document.getElementById('lessonId').value = lesson._id;
             document.getElementById('lessonTitle').value = lesson.title;
             document.getElementById('lessonDescription').value = lesson.description;
@@ -345,20 +348,20 @@ function openLessonModal(lessonId = null) {
             document.getElementById('lessonIsPublished').checked = lesson.isPublished;
         }
     } else {
-        modalTitle.textContent = 'Add New Lesson';
+        pageTitle.textContent = 'Add New Lesson';
     }
     
-    modal.classList.add('active');
+    showPage('addLesson');
 }
 
-// Close Lesson Modal
-function closeLessonModal() {
-    document.getElementById('lessonModal').classList.remove('active');
+// Go back to course detail page
+function goBackToCourseDetail() {
+    showPage('courseDetail');
 }
 
 // Edit Lesson
 function editLesson(lessonId) {
-    openLessonModal(lessonId);
+    openLessonPage(lessonId);
 }
 
 // Delete Lesson
@@ -427,7 +430,7 @@ document.getElementById('lessonForm').addEventListener('submit', async function(
         
         if (result.success) {
             alert(result.message);
-            closeLessonModal();
+            goBackToCourseDetail();
             viewCourseDetail(currentCourseId); // Reload course detail
         } else {
             throw new Error(result.message);
@@ -437,6 +440,9 @@ document.getElementById('lessonForm').addEventListener('submit', async function(
         alert('Error saving lesson: ' + error.message);
     }
 });
+
+// ==================== NAVIGATION ====================
+// Scroll-based navigation removed for accessibility
 
 // ==================== INITIALIZATION ====================
 
