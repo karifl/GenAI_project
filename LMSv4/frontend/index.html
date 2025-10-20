@@ -91,7 +91,7 @@
             <div class="lessons-section">
                 <div class="section-header">
                     <h2>Course Lessons</h2>
-                    <button class="btn btn-primary" onclick="showPage('addLesson')">+ Add Lesson</button>
+                    <button class="btn btn-primary" onclick="openAddLessonPage()">+ Add Lesson</button>
                 </div>
                 
                 <div id="lessonList" class="lesson-list">
@@ -140,49 +140,96 @@
         </div>
     </div>
 
-    <!-- Add Lesson Page -->
-    <div id="addLesson" class="page">
+    <!-- Add New Lesson Page -->
+    <div id="addNewLesson" class="page">
         <div class="page-header">
-            <h1 id="addLessonTitle">Add New Lesson</h1>
+            <h1>Add New Lesson</h1>
             <p>Create a new lesson for your course</p>
         </div>
         <div class="container">
             <button class="btn btn-secondary" onclick="goBackToCourseDetail()">&larr; Back to Course</button>
             
-            <form id="lessonForm" class="form-page">
-                <input type="hidden" id="lessonId">
-                
+            <form id="addLessonForm" class="form-page">
                 <div class="form-row">
                     <div class="form-col">
-                        <label for="lessonTitle">Lesson Title:</label>
-                        <input type="text" id="lessonTitle" required>
+                        <label for="addLessonTitle">Lesson Title:</label>
+                        <input type="text" id="addLessonTitle" required>
                     </div>
                     <div class="form-col">
-                        <label for="lessonDuration">Duration (minutes):</label>
-                        <input type="number" id="lessonDuration" min="1" required>
+                        <label for="addLessonDuration">Duration (minutes):</label>
+                        <input type="number" id="addLessonDuration" min="1" required>
                     </div>
                 </div>
                 
-                <label for="lessonDescription">Description:</label>
-                <textarea id="lessonDescription" rows="3" required></textarea>
+                <label for="addLessonDescription">Description:</label>
+                <textarea id="addLessonDescription" rows="3" required></textarea>
                 
-                <label for="lessonContent">Lesson Content:</label>
-                <textarea id="lessonContent" rows="6" required></textarea>
+                <label for="addLessonContent">Lesson Content:</label>
+                <textarea id="addLessonContent" rows="6" required></textarea>
                 
-                <label for="lessonVideoUrl">Video URL (optional):</label>
-                <input type="url" id="lessonVideoUrl" placeholder="https://youtube.com/...">
+                <label for="addLessonVideoUrl">Video URL (optional):</label>
+                <input type="url" id="addLessonVideoUrl" placeholder="https://youtube.com/...">
                 
                 <div class="form-row">
                     <div class="form-col">
                         <label>
-                            <input type="checkbox" id="lessonIsPublished">
+                            <input type="checkbox" id="addLessonIsPublished">
                             Published
                         </label>
                     </div>
                 </div>
                 
                 <div class="form-buttons">
-                    <button type="submit" class="btn btn-primary">Save Lesson</button>
+                    <button type="submit" class="btn btn-primary">Add Lesson</button>
+                    <button type="button" class="btn btn-secondary" onclick="goBackToCourseDetail()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Lesson Page -->
+    <div id="editLesson" class="page">
+        <div class="page-header">
+            <h1 id="editLessonTitle">Edit Lesson</h1>
+            <p>Modify lesson details</p>
+        </div>
+        <div class="container">
+            <button class="btn btn-secondary" onclick="goBackToCourseDetail()">&larr; Back to Course</button>
+            
+            <form id="editLessonForm" class="form-page">
+                <input type="hidden" id="editLessonId">
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <label for="editLessonTitle">Lesson Title:</label>
+                        <input type="text" id="editLessonTitle" required>
+                    </div>
+                    <div class="form-col">
+                        <label for="editLessonDuration">Duration (minutes):</label>
+                        <input type="number" id="editLessonDuration" min="1" required>
+                    </div>
+                </div>
+                
+                <label for="editLessonDescription">Description:</label>
+                <textarea id="editLessonDescription" rows="3" required></textarea>
+                
+                <label for="editLessonContent">Lesson Content:</label>
+                <textarea id="editLessonContent" rows="6" required></textarea>
+                
+                <label for="editLessonVideoUrl">Video URL (optional):</label>
+                <input type="url" id="editLessonVideoUrl" placeholder="https://youtube.com/...">
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <label>
+                            <input type="checkbox" id="editLessonIsPublished">
+                            Published
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-buttons">
+                    <button type="submit" class="btn btn-primary">Update Lesson</button>
                     <button type="button" class="btn btn-secondary" onclick="goBackToCourseDetail()">Cancel</button>
                 </div>
             </form>

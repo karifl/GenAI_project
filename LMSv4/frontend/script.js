@@ -293,7 +293,7 @@ function displayLessons() {
                     </div>
                 </div>
                 <div class="lesson-actions-header">
-                    <button class="btn btn-edit" onclick="event.stopPropagation(); editLesson('${lesson._id}')">Edit</button>
+                    <button class="btn btn-edit" onclick="event.stopPropagation(); editLessonForm('${lesson._id}')">Edit</button>
                     <button class="btn btn-danger" onclick="event.stopPropagation(); deleteLesson('${lesson._id}')">Delete</button>
                     <span class="expand-icon" id="icon-${lesson._id}">▼</span>
                 </div>
@@ -327,31 +327,26 @@ function toggleLesson(lessonId) {
     icon.classList.toggle('rotated');
 }
 
-// Open Lesson Page
-function openLessonPage(lessonId = null) {
-    const form = document.getElementById('lessonForm');
-    const pageTitle = document.getElementById('addLessonTitle');
-    
+// Open Add Lesson Page
+function openAddLessonPage() {
+    const form = document.getElementById('addLessonForm');
     form.reset();
-    document.getElementById('lessonId').value = '';
-    
-    if (lessonId) {
-        const lesson = currentLessons.find(l => l._id === lessonId);
-        if (lesson) {
-            pageTitle.textContent = 'Edit Lesson';
-            document.getElementById('lessonId').value = lesson._id;
-            document.getElementById('lessonTitle').value = lesson.title;
-            document.getElementById('lessonDescription').value = lesson.description;
-            document.getElementById('lessonContent').value = lesson.content;
-            document.getElementById('lessonDuration').value = lesson.duration;
-            document.getElementById('lessonVideoUrl').value = lesson.videoUrl || '';
-            document.getElementById('lessonIsPublished').checked = lesson.isPublished;
-        }
-    } else {
-        pageTitle.textContent = 'Add New Lesson';
+    showPage('addNewLesson');
+}
+
+// Open Edit Lesson Page
+function openEditLessonPage(lessonId) {
+    const lesson = currentLessons.find(l => l._id === lessonId);
+    if (lesson) {
+        document.getElementById('editLessonId').value = lesson._id;
+        document.getElementById('editLessonTitle').value = lesson.title;
+        document.getElementById('editLessonDescription').value = lesson.description;
+        document.getElementById('editLessonContent').value = lesson.content;
+        document.getElementById('editLessonDuration').value = lesson.duration;
+        document.getElementById('editLessonVideoUrl').value = lesson.videoUrl || '';
+        document.getElementById('editLessonIsPublished').checked = lesson.isPublished;
+        showPage('editLesson');
     }
-    
-    showPage('addLesson');
 }
 
 // Go back to course detail page
@@ -359,9 +354,9 @@ function goBackToCourseDetail() {
     showPage('courseDetail');
 }
 
-// Edit Lesson
-function editLesson(lessonId) {
-    openLessonPage(lessonId);
+// Open Edit Lesson Form
+function editLessonForm(lessonId) {
+    openEditLessonPage(lessonId);
 }
 
 // Delete Lesson
@@ -389,42 +384,43 @@ async function deleteLesson(lessonId) {
     }
 }
 
-// Lesson Form Submit Handler
-document.getElementById('lessonForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const lessonId = document.getElementById('lessonId').value;
-    const lessonData = {
-        title: document.getElementById('lessonTitle').value,
-        description: document.getElementById('lessonDescription').value,
-        content: document.getElementById('lessonContent').value,
-        duration: parseInt(document.getElementById('lessonDuration').value),
-        videoUrl: document.getElementById('lessonVideoUrl').value,
-        isPublished: document.getElementById('lessonIsPublished').checked
-    };
-    
+// Add New Lesson
+async function addLesson(lessonData) {
     try {
-        let response;
+        const response = await fetch(`${API_URL}/courses/${currentCourseId}/lessons`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(lessonData)
+        });
         
-        if (lessonId) {
-            // Update existing lesson
-            response = await fetch(`${API_URL}/courses/${currentCourseId}/lessons/${lessonId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(lessonData)
-            });
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(result.message);
+            document.getElementById('addLessonForm').reset();
+            goBackToCourseDetail();
+            viewCourseDetail(currentCourseId); // Reload course detail
         } else {
-            // Create new lesson
-            response = await fetch(`${API_URL}/courses/${currentCourseId}/lessons`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(lessonData)
-            });
+            throw new Error(result.message);
         }
+    } catch (error) {
+        console.error('Error adding lesson:', error);
+        alert('Error adding lesson: ' + error.message);
+    }
+}
+
+// Edit Existing Lesson
+async function editLesson(lessonId, lessonData) {
+    try {
+        const response = await fetch(`${API_URL}/courses/${currentCourseId}/lessons/${lessonId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(lessonData)
+        });
         
         const result = await response.json();
         
@@ -436,9 +432,42 @@ document.getElementById('lessonForm').addEventListener('submit', async function(
             throw new Error(result.message);
         }
     } catch (error) {
-        console.error('Error saving lesson:', error);
-        alert('Error saving lesson: ' + error.message);
+        console.error('Error editing lesson:', error);
+        alert('Error editing lesson: ' + error.message);
     }
+}
+
+// Add Lesson Form Submit Handler
+document.getElementById('addLessonForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const lessonData = {
+        title: document.getElementById('addLessonTitle').value,
+        description: document.getElementById('addLessonDescription').value,
+        content: document.getElementById('addLessonContent').value,
+        duration: parseInt(document.getElementById('addLessonDuration').value),
+        videoUrl: document.getElementById('addLessonVideoUrl').value,
+        isPublished: document.getElementById('addLessonIsPublished').checked
+    };
+    
+    await addLesson(lessonData);
+});
+
+// Edit Lesson Form Submit Handler
+document.getElementById('editLessonForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const lessonId = document.getElementById('editLessonId').value;
+    const lessonData = {
+        title: document.getElementById('editLessonTitle').value,
+        description: document.getElementById('editLessonDescription').value,
+        content: document.getElementById('editLessonContent').value,
+        duration: parseInt(document.getElementById('editLessonDuration').value),
+        videoUrl: document.getElementById('editLessonVideoUrl').value,
+        isPublished: document.getElementById('editLessonIsPublished').checked
+    };
+    
+    await editLesson(lessonId, lessonData);
 });
 
 // ==================== NAVIGATION ====================

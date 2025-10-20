@@ -20,7 +20,10 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/lms_datab
 
 // Routes
 const courseRoutes = require('./routes/courses');
+const userRoutes = require('./routes/users');
+
 app.use('/api/courses', courseRoutes);
+app.use('/api/users', userRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
