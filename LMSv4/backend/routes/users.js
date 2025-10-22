@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Course = require('../models/Course');
 
@@ -111,9 +112,11 @@ router.post('/register', async (req, res) => {
 // LOGIN user
 router.post('/login', async (req, res) => {
     try {
+        console.log('Login attempt received:', { email: req.body.email, hasPassword: !!req.body.password });
         const { email, password } = req.body;
 
         if (!email || !password) {
+            console.log('Missing email or password');
             return res.status(400).json({
                 success: false,
                 message: 'Email and password are required'
@@ -122,7 +125,9 @@ router.post('/login', async (req, res) => {
 
         // Find user by email
         const user = await User.findByEmail(email);
+        console.log('User found:', !!user);
         if (!user) {
+            console.log('User not found for email:', email);
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
@@ -130,7 +135,9 @@ router.post('/login', async (req, res) => {
         }
 
         // Check if user is active
+        console.log('User active status:', user.isActive);
         if (!user.isActive) {
+            console.log('User account is deactivated');
             return res.status(401).json({
                 success: false,
                 message: 'Account is deactivated'
@@ -139,7 +146,9 @@ router.post('/login', async (req, res) => {
 
         // Check password
         const isPasswordValid = await user.comparePassword(password);
+        console.log('Password valid:', isPasswordValid);
         if (!isPasswordValid) {
+            console.log('Invalid password for user:', email);
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
@@ -149,10 +158,23 @@ router.post('/login', async (req, res) => {
         // Update last login
         await user.updateLastLogin();
 
+        // Generate JWT token
+        const token = jwt.sign(
+            { userId: user._id, role: user.role },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '24h' }
+        );
+
+        console.log('Login successful for user:', user.email);
+        console.log('Token generated:', !!token);
+
         res.json({
             success: true,
             message: 'Login successful',
-            data: user.getPublicProfile()
+            data: {
+                user: user.getPublicProfile(),
+                token: token
+            }
         });
     } catch (error) {
         res.status(500).json({
@@ -309,7 +331,7 @@ router.delete('/:id/permanent', async (req, res) => {
 
 // ==================== ENROLLMENT ROUTES ====================
 
-// ENROLL user in a course
+// ENROLL user in a course (Students only)
 router.post('/:userId/enroll/:courseId', async (req, res) => {
     try {
         const user = await User.findById(req.params.userId);
@@ -326,6 +348,14 @@ router.post('/:userId/enroll/:courseId', async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: 'Course not found'
+            });
+        }
+
+        // Only students can enroll in courses
+        if (user.role !== 'student') {
+            return res.status(403).json({
+                success: false,
+                message: 'Only students can enroll in courses'
             });
         }
 

@@ -8,16 +8,99 @@
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar">
+    <nav class="navbar" id="navbar">
         <div class="nav-brand">My Learning Management System</div>
-        <ul class="nav-menu">
+        <ul class="nav-menu" id="navMenu">
             <li><a href="#" onclick="showPage('home')">Home</a></li>
             <li><a href="#" onclick="showPage('courses')">Courses</a></li>
+            <li id="authLinks">
+                <a href="#" onclick="showPage('login')">Login</a>
+                <a href="#" onclick="showPage('register')">Register</a>
+            </li>
+            <li id="userLinks" style="display: none;">
+                <span id="userName">Welcome, User</span>
+                <a href="#" onclick="logout()">Logout</a>
+            </li>
         </ul>
     </nav>
 
+    <!-- Login Page -->
+    <div id="login" class="page">
+        <div class="page-header">
+            <h1>Login to Your Account</h1>
+            <p>Welcome back! Please sign in to continue</p>
+        </div>
+        <div class="container">
+            <div class="auth-container">
+                <form id="loginForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="loginEmail">Email Address:</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="loginPassword">Password:</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="submit" class="btn btn-primary">Login</button>
+                        <button type="button" class="btn btn-secondary" onclick="showPage('register')">Create Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Page -->
+    <div id="register" class="page">
+        <div class="page-header">
+            <h1>Create Your Account</h1>
+            <p>Join our learning community today</p>
+        </div>
+        <div class="container">
+            <div class="auth-container">
+                <form id="registerForm" class="auth-form">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label for="regFirstName">First Name:</label>
+                            <input type="text" id="regFirstName" required>
+                        </div>
+                        <div class="form-col">
+                            <label for="regLastName">Last Name:</label>
+                            <input type="text" id="regLastName" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="regEmail">Email Address:</label>
+                        <input type="email" id="regEmail" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="regPassword">Password:</label>
+                        <input type="password" id="regPassword" minlength="6" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="regRole">Role:</label>
+                        <select id="regRole">
+                            <option value="student">Student</option>
+                            <option value="instructor">Instructor</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="submit" class="btn btn-primary">Create Account</button>
+                        <button type="button" class="btn btn-secondary" onclick="showPage('login')">Already have an account?</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Home Page -->
-    <div id="home" class="page active">
+    <div id="home" class="page">
         <div class="page-header">
             <h1>Welcome to Your Learning Management System</h1>
             <p>Manage your courses and lessons efficiently</p>
@@ -65,8 +148,8 @@
             <!-- Loading Indicator -->
             <div id="loading" class="loading">Loading courses...</div>
             
-            <!-- Add Course Button -->
-            <button class="btn btn-primary" onclick="showPage('addCourse')">+ Add New Course</button>
+            <!-- Add Course Button (Instructors only) -->
+            <button id="addCourseBtn" class="btn btn-primary" onclick="showPage('addCourse')" style="display: none;">+ Add New Course</button>
             
             <!-- Course List -->
             <div id="courseList" class="course-grid">
@@ -91,7 +174,7 @@
             <div class="lessons-section">
                 <div class="section-header">
                     <h2>Course Lessons</h2>
-                    <button class="btn btn-primary" onclick="openAddLessonPage()">+ Add Lesson</button>
+                    <button id="addLessonBtn" class="btn btn-primary" onclick="openAddLessonPage()" style="display: none;">+ Add Lesson</button>
                 </div>
                 
                 <div id="lessonList" class="lesson-list">
@@ -120,7 +203,8 @@
                 <textarea id="courseDescription" rows="4" required></textarea>
                 
                 <label for="courseInstructor">Instructor:</label>
-                <input type="text" id="courseInstructor" required>
+                <input type="text" id="courseInstructor" required readonly>
+                <small class="form-help">Instructor name is automatically set to your name</small>
                 
                 <label for="courseDuration">Duration (weeks):</label>
                 <input type="number" id="courseDuration" min="1" required>
@@ -135,6 +219,7 @@
                 <div class="form-buttons">
                     <button type="submit" class="btn btn-primary">Save Course</button>
                     <button type="button" class="btn btn-secondary" onclick="showPage('courses')">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="resetCourseForm()">Add Another Course</button>
                 </div>
             </form>
         </div>
@@ -170,6 +255,9 @@
                 <label for="addLessonVideoUrl">Video URL (optional):</label>
                 <input type="url" id="addLessonVideoUrl" placeholder="https://youtube.com/...">
                 
+                <label for="addLessonFile">Upload Material (optional):</label>
+                <input type="file" id="addLessonFile" accept=".pdf,.doc,.docx,.txt,.zip,.mp4,.jpg,.png">
+                
                 <div class="form-row">
                     <div class="form-col">
                         <label>
@@ -182,6 +270,7 @@
                 <div class="form-buttons">
                     <button type="submit" class="btn btn-primary">Add Lesson</button>
                     <button type="button" class="btn btn-secondary" onclick="goBackToCourseDetail()">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="resetLessonForm()">Add Another Lesson</button>
                 </div>
             </form>
         </div>

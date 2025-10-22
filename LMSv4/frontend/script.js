@@ -5,6 +5,8 @@ const API_URL = 'http://localhost:5000/api';
 let courses = [];
 let currentCourseId = null;
 let currentLessons = [];
+let currentUser = null;
+let authToken = null;
 
 // ==================== PAGE NAVIGATION ====================
 
@@ -16,19 +18,213 @@ function showPage(pageId) {
     
     // Show the requested page
     const targetPage = document.getElementById(pageId);
-    if (targetPage) {
-        targetPage.classList.add('active');
-        
-        // Load data if needed
-        if (pageId === 'courses') {
-            loadCourses();
-        } else if (pageId === 'home') {
-            updateStats();
+    
+        if (targetPage) {
+            targetPage.classList.add('active');
+            
+            // Load data if needed
+            if (pageId === 'courses') {
+                loadCourses();
+            } else if (pageId === 'home') {
+                updateStats();
+            }
+        } else {
+            showPage('login');
+            document.getElementById('loginForm').reset();
+            return;
         }
+    }   
+
+
+
+// ==================== AUTHENTICATION FUNCTIONS ====================
+
+// Check if user is logged in
+function checkAuthStatus() {
+    const user = localStorage.getItem('currentUser');
+    const token = localStorage.getItem('authToken');
+    
+    if (user && token) {
+        currentUser = JSON.parse(user);
+        authToken = token;
+        updateNavigation(true);
+        return true;
+    } else {
+        updateNavigation(false);
+        return false;
     }
 }
 
+// Update navigation based on auth status
+function updateNavigation(isLoggedIn) {
+    const authLinks = document.getElementById('authLinks');
+    const userLinks = document.getElementById('userLinks');
+    const userName = document.getElementById('userName');
+    const addCourseBtn = document.getElementById('addCourseBtn');
+    const addLessonBtn = document.getElementById('addLessonBtn');
+    
+    console.log('Updating navigation, isLoggedIn:', isLoggedIn);
+    console.log('currentUser:', currentUser);
+    
+    if (isLoggedIn && currentUser) {
+        authLinks.style.display = 'none';
+        userLinks.style.display = 'flex';
+        userName.textContent = `Welcome, ${currentUser.fullName || 'User'} (${currentUser.role})`;
+        
+        // Show/hide role-based elements
+        if (addCourseBtn) {
+            addCourseBtn.style.display = (currentUser.role === 'instructor' || currentUser.role === 'admin') ? 'block' : 'none';
+        }
+        if (addLessonBtn) {
+            addLessonBtn.style.display = (currentUser.role === 'instructor' || currentUser.role === 'admin') ? 'block' : 'none';
+        }
+        
+        console.log('Showing user links for:', currentUser.fullName);
+    } else {
+        authLinks.style.display = 'flex';
+        userLinks.style.display = 'none';
+        console.log('Showing auth links');
+    }
+}
+
+// Register User
+async function registerUser(userData) {
+    try {
+        const response = await fetch(`${API_URL}/users/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Registration successful! Please login with your credentials.');
+            showPage('login');
+            document.getElementById('registerForm').reset();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error('Error registering user:', error);
+        alert('Registration failed: ' + error.message);
+    }
+}
+
+// Login User
+async function loginUser(email, password) {
+    try {
+        console.log('Attempting login with:', { email, API_URL });
+        
+        const response = await fetch(`${API_URL}/users/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email, password })
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('Login result:', result);
+        
+        if (result.success) {
+            currentUser = result.data.user;
+            authToken = result.data.token;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            localStorage.setItem('authToken', authToken);
+            updateNavigation(true);
+            alert('Login successful! Welcome back.');
+            showPage('home');
+            document.getElementById('loginForm').reset();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error('Error logging in:', error);
+        alert('Login failed: ' + error.message);
+    }
+}
+
+// Logout User
+function logout() {
+    currentUser = null;
+    authToken = null;
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('authToken');
+    updateNavigation(false);
+    alert('Logged out successfully.');
+    showPage('login');
+}
+
+// ==================== API HELPER FUNCTIONS ====================
+
+// Make authenticated API call
+async function apiCall(url, options = {}) {
+    const defaultOptions = {
+        headers: {
+            'Content-Type': 'application/json',
+            ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+        }
+    };
+    
+    const mergedOptions = {
+        ...defaultOptions,
+        ...options,
+        headers: {
+            ...defaultOptions.headers,
+            ...options.headers
+        }
+    };
+    
+    const response = await fetch(url, mergedOptions);
+    
+    // If unauthorized, redirect to login
+    if (response.status === 401) {
+        logout();
+        alert('Session expired. Please login again.');
+        return null;
+    }
+    
+    return response;
+}
+
 // ==================== COURSE FUNCTIONS ====================
+
+// Enroll in Course (Students only)
+async function enrollInCourse(courseId) {
+    if (!currentUser || currentUser.role !== 'student') {
+        alert('Only students can enroll in courses.');
+        return;
+    }
+    
+    try {
+        const response = await apiCall(`${API_URL}/users/${currentUser._id}/enroll/${courseId}`, {
+            method: 'POST'
+        });
+        
+        if (!response) return;
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Successfully enrolled in course!');
+            loadCourses(); // Refresh course list
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error('Error enrolling in course:', error);
+        alert('Error enrolling in course: ' + error.message);
+    }
+}
 
 // Load Courses from API
 async function loadCourses() {
@@ -38,7 +234,8 @@ async function loadCourses() {
     loading.classList.add('active');
     
     try {
-        const response = await fetch(`${API_URL}/courses`);
+        const response = await apiCall(`${API_URL}/courses`);
+        if (!response) return;
         const result = await response.json();
         
         if (result.success) {
@@ -57,6 +254,12 @@ async function loadCourses() {
 
 // Display Courses
 function displayCourses() {
+    if ((!currentUser || currentUser.role !== 'student') && (!currentUser || currentUser.role !== 'instructor') && (!currentUser || currentUser.role !== 'admin')) {
+        alert('You are not authorized to view courses. Please login as a student, instructor, or admin.');
+        showPage('login');
+        document.getElementById('loginForm').reset();
+        return;
+    }
     const courseList = document.getElementById('courseList');
     
     if (courses.length === 0) {
@@ -64,7 +267,13 @@ function displayCourses() {
         return;
     }
     
-    courseList.innerHTML = courses.map(course => `
+    courseList.innerHTML = courses.map(course => {
+        const isInstructor = currentUser && (currentUser.role === 'instructor' || currentUser.role === 'admin');
+        const isCourseOwner = isInstructor && course.instructorId === currentUser._id;
+        const isStudent = currentUser && currentUser.role === 'student';
+        const isEnrolled = isStudent && currentUser.enrolledCourses?.some(enrollment => enrollment.courseId === course._id);
+        
+        return `
         <div class="course-card">
             <h3>${course.name}</h3>
             <p>${course.description}</p>
@@ -76,12 +285,18 @@ function displayCourses() {
                 <span class="status-badge status-${course.status}">${course.status.toUpperCase()}</span>
             </div>
             <div class="course-actions">
-                <button class="btn btn-primary" onclick="viewCourseDetail('${course._id}')">View Lessons</button>
-                <button class="btn btn-edit" onclick="editCourse('${course._id}')">Edit</button>
-                <button class="btn btn-danger" onclick="deleteCourse('${course._id}')">Delete</button>
+                ${isStudent && !isEnrolled ? 
+                    `<button class="btn btn-primary" onclick="enrollInCourse('${course._id}')">Enroll</button>` :
+                    `<button class="btn btn-primary" onclick="viewCourseDetail('${course._id}')">View Lessons</button>`
+                }
+                ${isCourseOwner ? `
+                    <button class="btn btn-edit" onclick="editCourse('${course._id}')">Edit</button>
+                    <button class="btn btn-danger" onclick="deleteCourse('${course._id}')">Delete</button>
+                ` : ''}
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 // Update Statistics
@@ -108,9 +323,18 @@ async function updateStats() {
 function openCoursePage(courseId = null) {
     const form = document.getElementById('courseForm');
     const pageTitle = document.getElementById('addCourseTitle');
+    const instructorField = document.getElementById('courseInstructor');
     
     form.reset();
     document.getElementById('courseId').value = '';
+    
+    // Always set instructor name from current user
+    if (currentUser) {
+        const instructorName = currentUser.fullName || `${currentUser.firstName} ${currentUser.lastName}`;
+        instructorField.value = instructorName;
+        instructorField.readOnly = true;
+        instructorField.style.backgroundColor = '#f5f5f5';
+    }
     
     if (courseId) {
         const course = courses.find(c => c._id === courseId);
@@ -119,7 +343,6 @@ function openCoursePage(courseId = null) {
             document.getElementById('courseId').value = course._id;
             document.getElementById('courseName').value = course.name;
             document.getElementById('courseDescription').value = course.description;
-            document.getElementById('courseInstructor').value = course.instructor;
             document.getElementById('courseDuration').value = course.duration;
             document.getElementById('courseStatus').value = course.status;
         }
@@ -135,6 +358,24 @@ function editCourse(courseId) {
     openCoursePage(courseId);
 }
 
+// Reset Course Form
+function resetCourseForm() {
+    const form = document.getElementById('courseForm');
+    const instructorField = document.getElementById('courseInstructor');
+    
+    form.reset();
+    document.getElementById('courseId').value = '';
+    
+    // Re-populate instructor field
+    if (currentUser) {
+        const instructorName = currentUser.fullName || `${currentUser.firstName} ${currentUser.lastName}`;
+        instructorField.value = instructorName;
+    }
+    
+    // Focus on the first field
+    document.getElementById('courseName').focus();
+}
+
 // Delete Course
 async function deleteCourse(courseId) {
     if (!confirm('Are you sure you want to delete this course? All lessons will be deleted as well.')) {
@@ -142,10 +383,11 @@ async function deleteCourse(courseId) {
     }
     
     try {
-        const response = await fetch(`${API_URL}/courses/${courseId}`, {
+        const response = await apiCall(`${API_URL}/courses/${courseId}`, {
             method: 'DELETE'
         });
         
+        if (!response) return;
         const result = await response.json();
         
         if (result.success) {
@@ -168,36 +410,39 @@ document.getElementById('courseForm').addEventListener('submit', async function(
     const courseData = {
         name: document.getElementById('courseName').value,
         description: document.getElementById('courseDescription').value,
-        instructor: document.getElementById('courseInstructor').value,
         duration: parseInt(document.getElementById('courseDuration').value),
         status: document.getElementById('courseStatus').value
+        // instructor field is automatically set by backend from logged-in user
     };
     
     try {
         let response;
         
         if (courseId) {
-            response = await fetch(`${API_URL}/courses/${courseId}`, {
+            response = await apiCall(`${API_URL}/courses/${courseId}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify(courseData)
             });
         } else {
-            response = await fetch(`${API_URL}/courses`, {
+            response = await apiCall(`${API_URL}/courses`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify(courseData)
             });
         }
+        
+        if (!response) return;
         
         const result = await response.json();
         
         if (result.success) {
             alert(result.message);
+            // Reset the form
+            document.getElementById('courseForm').reset();
+            // Re-populate instructor field for future use
+            if (currentUser) {
+                const instructorName = currentUser.fullName || `${currentUser.firstName} ${currentUser.lastName}`;
+                document.getElementById('courseInstructor').value = instructorName;
+            }
             showPage('courses');
             loadCourses();
         } else {
@@ -216,7 +461,8 @@ async function viewCourseDetail(courseId) {
     currentCourseId = courseId;
     
     try {
-        const response = await fetch(`${API_URL}/courses/${courseId}`);
+        const response = await apiCall(`${API_URL}/courses/${courseId}`);
+        if (!response) return;
         const result = await response.json();
         
         if (result.success) {
@@ -282,6 +528,8 @@ function displayLessons() {
         return;
     }
     
+    const isInstructor = currentUser && (currentUser.role === 'instructor' || currentUser.role === 'admin');
+    
     lessonList.innerHTML = currentLessons.map((lesson, index) => `
         <div class="lesson-item">
             <div class="lesson-header" onclick="toggleLesson('${lesson._id}')">
@@ -293,8 +541,10 @@ function displayLessons() {
                     </div>
                 </div>
                 <div class="lesson-actions-header">
-                    <button class="btn btn-edit" onclick="event.stopPropagation(); editLessonForm('${lesson._id}')">Edit</button>
-                    <button class="btn btn-danger" onclick="event.stopPropagation(); deleteLesson('${lesson._id}')">Delete</button>
+                    ${isInstructor ? `
+                        <button class="btn btn-edit" onclick="event.stopPropagation(); editLessonForm('${lesson._id}')">Edit</button>
+                        <button class="btn btn-danger" onclick="event.stopPropagation(); deleteLesson('${lesson._id}')">Delete</button>
+                    ` : ''}
                     <span class="expand-icon" id="icon-${lesson._id}">▼</span>
                 </div>
             </div>
@@ -311,6 +561,21 @@ function displayLessons() {
                     <div class="lesson-video">
                         <strong>Video:</strong>
                         <a href="${lesson.videoUrl}" target="_blank">${lesson.videoUrl}</a>
+                    </div>
+                ` : ''}
+                ${lesson.downloadableMaterials && lesson.downloadableMaterials.length > 0 ? `
+                    <div class="lesson-materials">
+                        <strong>Downloadable Materials:</strong>
+                        <ul>
+                            ${lesson.downloadableMaterials.map(material => `
+                                <li>
+                                    <a href="${material.cloudinaryUrl || `${API_URL}/courses/${currentCourseId}/lessons/${lesson._id}/materials/${material._id}/download`}" target="_blank">
+                                        📄 ${material.name}
+                                    </a>
+                                    (${(material.fileSize / 1024).toFixed(1)} KB)
+                                </li>
+                            `).join('')}
+                        </ul>
                     </div>
                 ` : ''}
             </div>
@@ -354,6 +619,15 @@ function goBackToCourseDetail() {
     showPage('courseDetail');
 }
 
+// Reset Lesson Form
+function resetLessonForm() {
+    const form = document.getElementById('addLessonForm');
+    form.reset();
+    
+    // Focus on the first field
+    document.getElementById('addLessonTitle').focus();
+}
+
 // Open Edit Lesson Form
 function editLessonForm(lessonId) {
     openEditLessonPage(lessonId);
@@ -366,10 +640,11 @@ async function deleteLesson(lessonId) {
     }
     
     try {
-        const response = await fetch(`${API_URL}/courses/${currentCourseId}/lessons/${lessonId}`, {
+        const response = await apiCall(`${API_URL}/courses/${currentCourseId}/lessons/${lessonId}`, {
             method: 'DELETE'
         });
         
+        if (!response) return;
         const result = await response.json();
         
         if (result.success) {
@@ -387,18 +662,61 @@ async function deleteLesson(lessonId) {
 // Add New Lesson
 async function addLesson(lessonData) {
     try {
+        console.log('Adding lesson with data:', lessonData);
+        console.log('Current course ID:', currentCourseId);
+        
+        const fileInput = document.getElementById('addLessonFile');
+        const formData = new FormData();
+        
+        // Add lesson data
+        Object.keys(lessonData).forEach(key => {
+            formData.append(key, lessonData[key]);
+        });
+        
+        // Add file if selected
+        if (fileInput.files[0]) {
+            console.log('File selected:', fileInput.files[0].name);
+            formData.append('file', fileInput.files[0]);
+        }
+        
+        console.log('Sending request to:', `${API_URL}/courses/${currentCourseId}/lessons`);
+        console.log('FormData contents:');
+        for (let pair of formData.entries()) {
+            console.log(pair[0] + ': ' + pair[1]);
+            if((pair[0] === 'file') && (fileInput.files[0])) {
+                console.log('File name:', fileInput.files[0].name);
+                console.log('File size:', fileInput.files[0].size);
+            }
+        }
+        
         const response = await fetch(`${API_URL}/courses/${currentCourseId}/lessons`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Authorization': `Bearer ${authToken}`
+                // Note: Don't set Content-Type for FormData - browser sets it automatically with boundary
             },
-            body: JSON.stringify(lessonData)
+            body: formData
         });
         
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                logout();
+                alert('Session expired. Please login again.');
+                return;
+            }
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const result = await response.json();
+        console.log('Lesson creation result:', result);
         
         if (result.success) {
             alert(result.message);
+            // Reset the form
             document.getElementById('addLessonForm').reset();
             goBackToCourseDetail();
             viewCourseDetail(currentCourseId); // Reload course detail
@@ -414,18 +732,18 @@ async function addLesson(lessonData) {
 // Edit Existing Lesson
 async function editLesson(lessonId, lessonData) {
     try {
-        const response = await fetch(`${API_URL}/courses/${currentCourseId}/lessons/${lessonId}`, {
+        const response = await apiCall(`${API_URL}/courses/${currentCourseId}/lessons/${lessonId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify(lessonData)
         });
         
+        if (!response) return;
         const result = await response.json();
         
         if (result.success) {
             alert(result.message);
+            // Reset the form
+            document.getElementById('editLessonForm').reset();
             goBackToCourseDetail();
             viewCourseDetail(currentCourseId); // Reload course detail
         } else {
@@ -473,9 +791,45 @@ document.getElementById('editLessonForm').addEventListener('submit', async funct
 // ==================== NAVIGATION ====================
 // Scroll-based navigation removed for accessibility
 
+// ==================== AUTHENTICATION FORM HANDLERS ====================
+
+// Login Form Submit Handler
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    
+    await loginUser(email, password);
+});
+
+// Registration Form Submit Handler
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const userData = {
+        firstName: document.getElementById('regFirstName').value,
+        lastName: document.getElementById('regLastName').value,
+        email: document.getElementById('regEmail').value,
+        password: document.getElementById('regPassword').value,
+        role: document.getElementById('regRole').value
+    };
+    
+    await registerUser(userData);
+});
+
 // ==================== INITIALIZATION ====================
 
 document.addEventListener('DOMContentLoaded', function() {
-    loadCourses();
-    updateStats();
+    // Check authentication status first
+    const isAuthenticated = checkAuthStatus();
+    
+    // Show appropriate page based on authentication status
+    if (isAuthenticated) {
+        showPage('home');
+        loadCourses();
+        updateStats();
+    } else {
+        showPage('login');
+    }
 });

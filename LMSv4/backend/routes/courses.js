@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Course = require('../models/Course');
+const { authenticateToken, requireRole, requireInstructorOfCourse, requireEnrollment } = require('../middleware/auth');
+const { uploadSingle, getFileInfo, serveFile, deleteFile } = require('../utils/cloudinaryUpload');
 
 // ==================== COURSE ROUTES ====================
 
@@ -47,10 +49,16 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// CREATE new course
-router.post('/', async (req, res) => {
+// CREATE new course (Instructors only)
+router.post('/', authenticateToken, requireRole('instructor', 'admin'), async (req, res) => {
     try {
-        const course = await Course.create(req.body);
+        const courseData = {
+            ...req.body,
+            instructorId: req.user._id,
+            instructor: req.user.fullName || `${req.user.firstName} ${req.user.lastName}`
+        };
+        
+        const course = await Course.create(courseData);
         
         res.status(201).json({
             success: true,
@@ -66,24 +74,22 @@ router.post('/', async (req, res) => {
     }
 });
 
-// UPDATE course
-router.put('/:id', async (req, res) => {
+// UPDATE course (Instructors only - their own courses)
+router.put('/:id', authenticateToken, requireRole('instructor', 'admin'), requireInstructorOfCourse, async (req, res) => {
     try {
+        const updateData = {
+            ...req.body,
+            instructor: req.user.fullName || `${req.user.firstName} ${req.user.lastName}`
+        };
+        
         const course = await Course.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            updateData,
             {
                 new: true,
                 runValidators: true
             }
         );
-        
-        if (!course) {
-            return res.status(404).json({
-                success: false,
-                message: 'Course not found'
-            });
-        }
         
         res.json({
             success: true,
@@ -99,17 +105,10 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// DELETE course
-router.delete('/:id', async (req, res) => {
+// DELETE course (Instructors only - their own courses)
+router.delete('/:id', authenticateToken, requireRole('instructor', 'admin'), requireInstructorOfCourse, async (req, res) => {
     try {
         const course = await Course.findByIdAndDelete(req.params.id);
-        
-        if (!course) {
-            return res.status(404).json({
-                success: false,
-                message: 'Course not found'
-            });
-        }
         
         res.json({
             success: true,
@@ -127,22 +126,13 @@ router.delete('/:id', async (req, res) => {
 
 // ==================== LESSON ROUTES ====================
 
-// GET all lessons for a course
-router.get('/:courseId/lessons', async (req, res) => {
+// GET all lessons for a course (Students need enrollment, Instructors need ownership)
+router.get('/:courseId/lessons', authenticateToken, requireEnrollment, async (req, res) => {
     try {
-        const course = await Course.findById(req.params.courseId);
-        
-        if (!course) {
-            return res.status(404).json({
-                success: false,
-                message: 'Course not found'
-            });
-        }
-        
         res.json({
             success: true,
-            count: course.lessons.length,
-            data: course.lessons
+            count: req.course.lessons.length,
+            data: req.course.lessons
         });
     } catch (error) {
         res.status(500).json({
@@ -153,19 +143,10 @@ router.get('/:courseId/lessons', async (req, res) => {
     }
 });
 
-// GET single lesson
-router.get('/:courseId/lessons/:lessonId', async (req, res) => {
+// GET single lesson (Students need enrollment, Instructors need ownership)
+router.get('/:courseId/lessons/:lessonId', authenticateToken, requireEnrollment, async (req, res) => {
     try {
-        const course = await Course.findById(req.params.courseId);
-        
-        if (!course) {
-            return res.status(404).json({
-                success: false,
-                message: 'Course not found'
-            });
-        }
-        
-        const lesson = course.lessons.id(req.params.lessonId);
+        const lesson = req.course.lessons.id(req.params.lessonId);
         
         if (!lesson) {
             return res.status(404).json({
@@ -187,25 +168,34 @@ router.get('/:courseId/lessons/:lessonId', async (req, res) => {
     }
 });
 
-// CREATE new lesson
-router.post('/:courseId/lessons', async (req, res) => {
+// CREATE new lesson (Instructors only - their own courses)
+router.post('/:courseId/lessons', authenticateToken, requireRole('instructor', 'admin'), requireInstructorOfCourse, uploadSingle, async (req, res) => {
     try {
-        const course = await Course.findById(req.params.courseId);
-        
-        if (!course) {
-            return res.status(404).json({
-                success: false,
-                message: 'Course not found'
-            });
-        }
+        console.log('Creating lesson for course:', req.params.courseId);
+        console.log('Lesson data:', req.body);
+        console.log('File uploaded:', !!req.file);
         
         // Set order based on current lesson count
-        req.body.order = course.lessons.length + 1;
+        req.body.order = req.course.lessons.length + 1;
         
-        course.lessons.push(req.body);
-        await course.save();
+        // Handle file upload if present
+        if (req.file) {
+            console.log('Processing file upload:', req.file.originalname);
+            const materialInfo = getFileInfo(req.file);
+            console.log('File info:', materialInfo);
+            req.body.downloadableMaterials = [materialInfo];
+        } else {
+            // Initialize empty downloadableMaterials array if no file
+            req.body.downloadableMaterials = [];
+            console.log('No file uploaded, using empty downloadableMaterials array');
+        }
         
-        const newLesson = course.lessons[course.lessons.length - 1];
+        console.log('Adding lesson to course...');
+        req.course.lessons.push(req.body);
+        await req.course.save();
+        
+        const newLesson = req.course.lessons[req.course.lessons.length - 1];
+        console.log('Lesson created successfully:', newLesson._id);
         
         res.status(201).json({
             success: true,
@@ -213,6 +203,7 @@ router.post('/:courseId/lessons', async (req, res) => {
             data: newLesson
         });
     } catch (error) {
+        console.error('Error creating lesson:', error);
         res.status(400).json({
             success: false,
             message: 'Error creating lesson',
@@ -221,19 +212,10 @@ router.post('/:courseId/lessons', async (req, res) => {
     }
 });
 
-// UPDATE lesson
-router.put('/:courseId/lessons/:lessonId', async (req, res) => {
+// UPDATE lesson (Instructors only - their own courses)
+router.put('/:courseId/lessons/:lessonId', authenticateToken, requireRole('instructor', 'admin'), requireInstructorOfCourse, async (req, res) => {
     try {
-        const course = await Course.findById(req.params.courseId);
-        
-        if (!course) {
-            return res.status(404).json({
-                success: false,
-                message: 'Course not found'
-            });
-        }
-        
-        const lesson = course.lessons.id(req.params.lessonId);
+        const lesson = req.course.lessons.id(req.params.lessonId);
         
         if (!lesson) {
             return res.status(404).json({
@@ -247,7 +229,7 @@ router.put('/:courseId/lessons/:lessonId', async (req, res) => {
             lesson[key] = req.body[key];
         });
         
-        await course.save();
+        await req.course.save();
         
         res.json({
             success: true,
@@ -263,19 +245,10 @@ router.put('/:courseId/lessons/:lessonId', async (req, res) => {
     }
 });
 
-// DELETE lesson
-router.delete('/:courseId/lessons/:lessonId', async (req, res) => {
+// DELETE lesson (Instructors only - their own courses)
+router.delete('/:courseId/lessons/:lessonId', authenticateToken, requireRole('instructor', 'admin'), requireInstructorOfCourse, async (req, res) => {
     try {
-        const course = await Course.findById(req.params.courseId);
-        
-        if (!course) {
-            return res.status(404).json({
-                success: false,
-                message: 'Course not found'
-            });
-        }
-        
-        const lesson = course.lessons.id(req.params.lessonId);
+        const lesson = req.course.lessons.id(req.params.lessonId);
         
         if (!lesson) {
             return res.status(404).json({
@@ -285,7 +258,7 @@ router.delete('/:courseId/lessons/:lessonId', async (req, res) => {
         }
         
         lesson.deleteOne();
-        await course.save();
+        await req.course.save();
         
         res.json({
             success: true,
@@ -295,6 +268,192 @@ router.delete('/:courseId/lessons/:lessonId', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error deleting lesson',
+            error: error.message
+        });
+    }
+});
+
+// ==================== FILE UPLOAD/DOWNLOAD ROUTES ====================
+
+// UPLOAD course material (Instructors only - their own courses)
+router.post('/:courseId/materials', authenticateToken, requireRole('instructor', 'admin'), requireInstructorOfCourse, uploadSingle, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded'
+            });
+        }
+
+        const materialInfo = getFileInfo(req.file);
+        req.course.materials.push(materialInfo);
+        await req.course.save();
+
+        res.status(201).json({
+            success: true,
+            message: 'Course material uploaded successfully',
+            data: materialInfo
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: 'Error uploading course material',
+            error: error.message
+        });
+    }
+});
+
+// UPLOAD lesson material (Instructors only - their own courses)
+router.post('/:courseId/lessons/:lessonId/materials', authenticateToken, requireRole('instructor', 'admin'), requireInstructorOfCourse, uploadSingle, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded'
+            });
+        }
+
+        const lesson = req.course.lessons.id(req.params.lessonId);
+        if (!lesson) {
+            return res.status(404).json({
+                success: false,
+                message: 'Lesson not found'
+            });
+        }
+
+        const materialInfo = getFileInfo(req.file);
+        lesson.downloadableMaterials.push(materialInfo);
+        await req.course.save();
+
+        res.status(201).json({
+            success: true,
+            message: 'Lesson material uploaded successfully',
+            data: materialInfo
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: 'Error uploading lesson material',
+            error: error.message
+        });
+    }
+});
+
+// DOWNLOAD course material (Students need enrollment, Instructors need ownership)
+router.get('/:courseId/materials/:materialId/download', authenticateToken, requireEnrollment, async (req, res) => {
+    try {
+        const material = req.course.materials.id(req.params.materialId);
+        if (!material) {
+            return res.status(404).json({
+                success: false,
+                message: 'Material not found'
+            });
+        }
+
+        serveFile(material.cloudinaryUrl || material.filePath, res);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error downloading material',
+            error: error.message
+        });
+    }
+});
+
+// DOWNLOAD lesson material (Students need enrollment, Instructors need ownership)
+router.get('/:courseId/lessons/:lessonId/materials/:materialId/download', authenticateToken, requireEnrollment, async (req, res) => {
+    try {
+        const lesson = req.course.lessons.id(req.params.lessonId);
+        if (!lesson) {
+            return res.status(404).json({
+                success: false,
+                message: 'Lesson not found'
+            });
+        }
+
+        const material = lesson.downloadableMaterials.id(req.params.materialId);
+        if (!material) {
+            return res.status(404).json({
+                success: false,
+                message: 'Material not found'
+            });
+        }
+
+        serveFile(material.cloudinaryUrl || material.filePath, res);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error downloading material',
+            error: error.message
+        });
+    }
+});
+
+// DELETE course material (Instructors only - their own courses)
+router.delete('/:courseId/materials/:materialId', authenticateToken, requireRole('instructor', 'admin'), requireInstructorOfCourse, async (req, res) => {
+    try {
+        const material = req.course.materials.id(req.params.materialId);
+        if (!material) {
+            return res.status(404).json({
+                success: false,
+                message: 'Material not found'
+            });
+        }
+
+        // Delete file from Cloudinary
+        await deleteFile(material.cloudinaryId);
+
+        // Remove from database
+        material.deleteOne();
+        await req.course.save();
+
+        res.json({
+            success: true,
+            message: 'Course material deleted successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting material',
+            error: error.message
+        });
+    }
+});
+
+// DELETE lesson material (Instructors only - their own courses)
+router.delete('/:courseId/lessons/:lessonId/materials/:materialId', authenticateToken, requireRole('instructor', 'admin'), requireInstructorOfCourse, async (req, res) => {
+    try {
+        const lesson = req.course.lessons.id(req.params.lessonId);
+        if (!lesson) {
+            return res.status(404).json({
+                success: false,
+                message: 'Lesson not found'
+            });
+        }
+
+        const material = lesson.downloadableMaterials.id(req.params.materialId);
+        if (!material) {
+            return res.status(404).json({
+                success: false,
+                message: 'Material not found'
+            });
+        }
+
+        // Delete file from Cloudinary
+        await deleteFile(material.cloudinaryId);
+
+        // Remove from database
+        material.deleteOne();
+        await req.course.save();
+
+        res.json({
+            success: true,
+            message: 'Lesson material deleted successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting material',
             error: error.message
         });
     }
