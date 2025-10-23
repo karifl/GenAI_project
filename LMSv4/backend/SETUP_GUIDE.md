@@ -13,9 +13,7 @@ The lesson creation is failing because MongoDB is not running. Here's how to fix
 4. Get your connection string
 5. Create `.env` file in backend directory with:
    ```env
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/lms_database
-   JWT_SECRET=your-super-secret-jwt-key-here
-   PORT=5000
+
    ```
 
 #### Option B: Local MongoDB
@@ -23,9 +21,7 @@ The lesson creation is failing because MongoDB is not running. Here's how to fix
 2. Install and start the service
 3. Create `.env` file in backend directory with:
    ```env
-   MONGODB_URI=mongodb://localhost:27017/lms_database
-   JWT_SECRET=your-super-secret-jwt-key-here
-   PORT=5000
+
    ```
 
 ### Step 2: Test the Setup
