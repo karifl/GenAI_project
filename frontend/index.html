@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple LMS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-brand">My Learning Management System</div>
+        <ul class="nav-menu" id="navMenu">
+            <li><a href="#" onclick="showPage('home')">Home</a></li>
+            <li><a href="#" onclick="showPage('courses')">Courses</a></li>
+            <li id="authLinks">
+                <a href="#" onclick="showPage('login')">Login</a>
+                <a href="#" onclick="showPage('register')">Register</a>
+            </li>
+            <li id="userLinks" style="display: none;">
+                <span id="userName">Welcome, User</span>
+                <a href="#" onclick="logout()">Logout</a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Login Page -->
+    <div id="login" class="page">
+        <div class="page-header">
+            <h1>Login to Your Account</h1>
+            <p>Welcome back! Please sign in to continue</p>
+        </div>
+        <div class="container">
+            <div class="auth-container">
+                <form id="loginForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="loginEmail">Email Address:</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="loginPassword">Password:</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="submit" class="btn btn-primary">Login</button>
+                        <button type="button" class="btn btn-secondary" onclick="showPage('register')">Create Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Page -->
+    <div id="register" class="page">
+        <div class="page-header">
+            <h1>Create Your Account</h1>
+            <p>Join our learning community today</p>
+        </div>
+        <div class="container">
+            <div class="auth-container">
+                <form id="registerForm" class="auth-form">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label for="regFirstName">First Name:</label>
+                            <input type="text" id="regFirstName" required>
+                        </div>
+                        <div class="form-col">
+                            <label for="regLastName">Last Name:</label>
+                            <input type="text" id="regLastName" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="regEmail">Email Address:</label>
+                        <input type="email" id="regEmail" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="regPassword">Password:</label>
+                        <input type="password" id="regPassword" minlength="6" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="regRole">Role:</label>
+                        <select id="regRole">
+                            <option value="student">Student</option>
+                            <option value="instructor">Instructor</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="submit" class="btn btn-primary">Create Account</button>
+                        <button type="button" class="btn btn-secondary" onclick="showPage('login')">Already have an account?</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Home Page -->
+    <div id="home" class="page">
+        <div class="page-header">
+            <h1>Welcome to Your Learning Management System</h1>
+            <p>Manage your courses and lessons efficiently</p>
+        </div>
+        <div class="container">
+            <p class="welcome-message">
+                Hello! This platform helps you manage your courses and lessons efficiently. 
+                You can create courses, add multiple lessons, and organize your content.
+            </p>
+            <div class="welcome-card">
+                <h3>Getting Started</h3>
+                <ul>
+                    <li>Navigate to the <strong>Courses</strong> page to see all available courses</li>
+                    <li>Click <strong>Add New Course</strong> to create a course</li>
+                    <li>Click on a course to <strong>view and manage lessons</strong></li>
+                    <li>Use the edit and delete buttons to manage courses and lessons</li>
+                    <li>All data is stored securely in the database</li>
+                </ul>
+            </div>
+            <div class="stats-container">
+                <div class="stat-card">
+                    <h3 id="totalCourses">0</h3>
+                    <p>Total Courses</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="activeCourses">0</h3>
+                    <p>Active Courses</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalLessons">0</h3>
+                    <p>Total Lessons</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Courses Page -->
+    <div id="courses" class="page">
+        <div class="page-header">
+            <h1>Course Management</h1>
+            <p>Create, edit, and manage your courses</p>
+        </div>
+        <div class="container">
+            
+            <!-- Loading Indicator -->
+            <div id="loading" class="loading">Loading courses...</div>
+            
+            <!-- Add Course Button (Instructors only) -->
+            <button id="addCourseBtn" class="btn btn-primary" onclick="showPage('addCourse')" style="display: none;">+ Add New Course</button>
+            
+            <!-- Course List -->
+            <div id="courseList" class="course-grid">
+                <!-- Courses will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Detail Page (with Lessons) -->
+    <div id="courseDetail" class="page">
+        <div class="page-header">
+            <h1 id="courseDetailTitle">Course Details</h1>
+            <p>View and manage course lessons</p>
+        </div>
+        <div class="container">
+            <button class="btn btn-secondary" onclick="showPage('courses')">&larr; Back to Courses</button>
+            
+            <div id="courseInfo" class="course-detail-header">
+                <!-- Course details will be loaded here -->
+            </div>
+            
+            <div class="lessons-section">
+                <div class="section-header">
+                    <h2>Course Lessons</h2>
+                    <button id="addLessonBtn" class="btn btn-primary" onclick="openAddLessonPage()" style="display: none;">+ Add Lesson</button>
+                </div>
+                
+                <div id="lessonList" class="lesson-list">
+                    <!-- Lessons will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Course Page -->
+    <div id="addCourse" class="page">
+        <div class="page-header">
+            <h1 id="addCourseTitle">Add New Course</h1>
+            <p>Create a new course for your LMS</p>
+        </div>
+        <div class="container">
+            <button class="btn btn-secondary" onclick="showPage('courses')">&larr; Back to Courses</button>
+            
+            <form id="courseForm" class="form-page">
+                <input type="hidden" id="courseId">
+                
+                <label for="courseName">Course Name:</label>
+                <input type="text" id="courseName" required>
+                
+                <label for="courseDescription">Description:</label>
+                <textarea id="courseDescription" rows="4" required></textarea>
+                
+                <label for="courseInstructor">Instructor:</label>
+                <input type="text" id="courseInstructor" required readonly>
+                <small class="form-help">Instructor name is automatically set to your name</small>
+                
+                <label for="courseDuration">Duration (weeks):</label>
+                <input type="number" id="courseDuration" min="1" required>
+                
+                <label for="courseStatus">Status:</label>
+                <select id="courseStatus">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="completed">Completed</option>
+                </select>
+                
+                <div class="form-buttons">
+                    <button type="submit" class="btn btn-primary">Save Course</button>
+                    <button type="button" class="btn btn-secondary" onclick="showPage('courses')">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="resetCourseForm()">Add Another Course</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add New Lesson Page -->
+    <div id="addNewLesson" class="page">
+        <div class="page-header">
+            <h1>Add New Lesson</h1>
+            <p>Create a new lesson for your course</p>
+        </div>
+        <div class="container">
+            <button class="btn btn-secondary" onclick="goBackToCourseDetail()">&larr; Back to Course</button>
+            
+            <form id="addLessonForm" class="form-page">
+                <div class="form-row">
+                    <div class="form-col">
+                        <label for="addLessonTitle">Lesson Title:</label>
+                        <input type="text" id="addLessonTitle" required>
+                    </div>
+                    <div class="form-col">
+                        <label for="addLessonDuration">Duration (minutes):</label>
+                        <input type="number" id="addLessonDuration" min="1" required>
+                    </div>
+                </div>
+                
+                <label for="addLessonDescription">Description:</label>
+                <textarea id="addLessonDescription" rows="3" required></textarea>
+                
+                <label for="addLessonContent">Lesson Content:</label>
+                <textarea id="addLessonContent" rows="6" required></textarea>
+                
+                <label for="addLessonVideoUrl">Video URL (optional):</label>
+                <input type="url" id="addLessonVideoUrl" placeholder="https://youtube.com/...">
+                
+                <label for="addLessonFile">Upload Material (optional):</label>
+                <input type="file" id="addLessonFile" accept=".pdf,.doc,.docx,.txt,.zip,.mp4,.jpg,.png">
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <label>
+                            <input type="checkbox" id="addLessonIsPublished">
+                            Published
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-buttons">
+                    <button type="submit" class="btn btn-primary">Add Lesson</button>
+                    <button type="button" class="btn btn-secondary" onclick="goBackToCourseDetail()">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="resetLessonForm()">Add Another Lesson</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Lesson Page -->
+    <div id="editLesson" class="page">
+        <div class="page-header">
+            <h1 id="editLessonTitle">Edit Lesson</h1>
+            <p>Modify lesson details</p>
+        </div>
+        <div class="container">
+            <button class="btn btn-secondary" onclick="goBackToCourseDetail()">&larr; Back to Course</button>
+            
+            <form id="editLessonForm" class="form-page">
+                <input type="hidden" id="editLessonId">
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <label for="editLessonTitle">Lesson Title:</label>
+                        <input type="text" id="editLessonTitle" required>
+                    </div>
+                    <div class="form-col">
+                        <label for="editLessonDuration">Duration (minutes):</label>
+                        <input type="number" id="editLessonDuration" min="1" required>
+                    </div>
+                </div>
+                
+                <label for="editLessonDescription">Description:</label>
+                <textarea id="editLessonDescription" rows="3" required></textarea>
+                
+                <label for="editLessonContent">Lesson Content:</label>
+                <textarea id="editLessonContent" rows="6" required></textarea>
+                
+                <label for="editLessonVideoUrl">Video URL (optional):</label>
+                <input type="url" id="editLessonVideoUrl" placeholder="https://youtube.com/...">
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <label>
+                            <input type="checkbox" id="editLessonIsPublished">
+                            Published
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-buttons">
+                    <button type="submit" class="btn btn-primary">Update Lesson</button>
+                    <button type="button" class="btn btn-secondary" onclick="goBackToCourseDetail()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script src="script.js"></script>
+</body>
+</html>
