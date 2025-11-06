@@ -39,6 +39,41 @@ const lessonSchema = new mongoose.Schema({
             enum: ['pdf', 'doc', 'video', 'link', 'other']
         }
     }],
+    downloadableMaterials: [{
+        name: {
+            type: String,
+            required: true,
+            trim: true
+        },
+        fileName: {
+            type: String,
+            required: true
+        },
+        filePath: {
+            type: String,
+            required: true
+        },
+        fileSize: {
+            type: Number,
+            required: true
+        },
+        mimeType: {
+            type: String,
+            required: true
+        },
+        cloudinaryId: {
+            type: String,
+            required: false
+        },
+        cloudinaryUrl: {
+            type: String,
+            required: false
+        },
+        uploadedAt: {
+            type: Date,
+            default: Date.now
+        }
+    }],
     isPublished: {
         type: Boolean,
         default: false
@@ -64,6 +99,11 @@ const courseSchema = new mongoose.Schema({
         required: [true, 'Instructor name is required'],
         trim: true
     },
+    instructorId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: [true, 'Instructor ID is required']
+    },
     duration: {
         type: Number,
         required: [true, 'Course duration is required'],
@@ -78,7 +118,42 @@ const courseSchema = new mongoose.Schema({
         enum: ['active', 'inactive', 'completed'],
         default: 'active'
     },
-    lessons: [lessonSchema] // Embedded lessons
+    lessons: [lessonSchema], // Embedded lessons
+    materials: [{
+        name: {
+            type: String,
+            required: true,
+            trim: true
+        },
+        fileName: {
+            type: String,
+            required: true
+        },
+        filePath: {
+            type: String,
+            required: true
+        },
+        fileSize: {
+            type: Number,
+            required: true
+        },
+        mimeType: {
+            type: String,
+            required: true
+        },
+        cloudinaryId: {
+            type: String,
+            required: false
+        },
+        cloudinaryUrl: {
+            type: String,
+            required: false
+        },
+        uploadedAt: {
+            type: Date,
+            default: Date.now
+        }
+    }]
 }, {
     timestamps: true
 });
