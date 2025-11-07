@@ -1,5 +1,6 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
+	"installCommand": "npm install",
     "functions": {
         "backend/server.js": {
             "runtime": "nodejs20.x",
