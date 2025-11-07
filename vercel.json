@@ -1,3 +1,45 @@
 {
-    "rootDirectory": "frontend"
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+	"installCommand": "npm install",
+    "functions": {
+        "backend/server.js": {
+            "runtime": "nodejs20.x",
+            "maxDuration": 10,
+            "memory": 1024
+        }
+    },
+    "builds": [
+        {
+            "src": "backend/server.js",
+            "use": "@vercel/node",
+            "config": {
+                "includeFiles": [
+                    "backend/models/**",
+                    "backend/routes/**",
+                    "backend/utils/**"
+                ]
+            }
+        },
+        {
+            "src": "frontend/**/*",
+            "use": "@vercel/static"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "backend/server.js"
+        },
+        {
+            "handle": "filesystem"
+        },
+        {
+            "src": "/",
+            "dest": "frontend/index.html"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "frontend/$1"
+        }
+    ]
 }
