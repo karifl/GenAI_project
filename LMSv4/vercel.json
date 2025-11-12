@@ -16,7 +16,8 @@
                 "includeFiles": [
                     "backend/models/**",
                     "backend/routes/**",
-                    "backend/utils/**"
+                    "backend/utils/**",
+					"backend/middleware/**"
                 ]
             }
         },
@@ -42,4 +43,5 @@
             "dest": "frontend/$1"
         }
     ]
+
 }
