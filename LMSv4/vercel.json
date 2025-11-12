@@ -40,9 +40,10 @@
         },
         {
             "src": "/(.*)",
-            "dest": "frontend/**"
+            "dest": "frontend/$1"
         }
     ]
 
 }
+
 
