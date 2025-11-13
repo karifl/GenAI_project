@@ -36,7 +36,7 @@ const lessonSchema = new mongoose.Schema({
         url: String,
         type: {
             type: String,
-            enum: ['pdf', 'doc', 'video', 'link', 'other']
+            enum: ['pdf', 'doc', 'video', 'txt','zip', 'rar', 'link', 'other']
         }
     }],
     downloadableMaterials: [{

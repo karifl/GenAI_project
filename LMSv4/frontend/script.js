@@ -72,11 +72,10 @@ function updateNavigation(isLoggedIn) {
         userName.textContent = `Welcome, ${currentUser.fullName || 'User'} (${currentUser.role})`;
         
         // Show/hide role-based elements
-        if (addCourseBtn) {
-            addCourseBtn.style.display = (currentUser.role === 'instructor' || currentUser.role === 'admin') ? 'block' : 'none';
-        }
         if (addLessonBtn) {
             addLessonBtn.style.display = (currentUser.role === 'instructor' || currentUser.role === 'admin') ? 'block' : 'none';
+        } if(addCourseBtn){
+            addCourseBtn.style.display = (currentUser.role === 'instructor' || currentUser.role === 'admin') ? 'block' : 'none';
         }
         
         console.log('Showing user links for:', currentUser.fullName);
@@ -241,6 +240,7 @@ async function loadCourses() {
         if (result.success) {
             courses = result.data;
             displayCourses();
+            
         } else {
             throw new Error(result.message);
         }
@@ -273,6 +273,7 @@ function displayCourses() {
         const isStudent = currentUser && currentUser.role === 'student';
         const isEnrolled = isStudent && currentUser.enrolledCourses?.some(enrollment => enrollment.courseId === course._id);
         
+        if(isInstructor && isCourseOwner){ 
         return `
         <div class="course-card">
             <h3>${course.name}</h3>
@@ -294,8 +295,9 @@ function displayCourses() {
                     <button class="btn btn-danger" onclick="deleteCourse('${course._id}')">Delete</button>
                 ` : ''}
             </div>
+            
         </div>
-    `;
+    `}
     }).join('');
 }
 
@@ -345,12 +347,13 @@ function openCoursePage(courseId = null) {
             document.getElementById('courseDescription').value = course.description;
             document.getElementById('courseDuration').value = course.duration;
             document.getElementById('courseStatus').value = course.status;
+        } else {
+            pageTitle.textContent = 'Add New Course';
+            showPage('addCourse');
         }
-    } else {
-        pageTitle.textContent = 'Add New Course';
     }
-    
-    showPage('addCourse');
+
+      
 }
 
 // Edit Course
@@ -688,7 +691,9 @@ async function addLesson(lessonData) {
                 console.log('File size:', fileInput.files[0].size);
             }
         }
-        
+        console.log('authToken:', authToken);
+        console.log('currentCourseId:', currentCourseId);
+        console.log('formData:', formData);
         const response = await fetch(`${API_URL}/courses/${currentCourseId}/lessons`, {
             method: 'POST',
             headers: {
@@ -767,6 +772,8 @@ document.getElementById('addLessonForm').addEventListener('submit', async functi
         videoUrl: document.getElementById('addLessonVideoUrl').value,
         isPublished: document.getElementById('addLessonIsPublished').checked
     };
+   console.log("This is the lessonData",lessonData);
+   
     
     await addLesson(lessonData);
 });
